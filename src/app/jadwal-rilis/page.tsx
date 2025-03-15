@@ -316,7 +316,7 @@ export default function JadwalRilisPage() {
                     whileHover="hover"
                     className="bg-gray-900/30 backdrop-blur-sm rounded-lg overflow-hidden border border-gray-800/50 hover:border-purple-500/30"
                   >
-                    <Link href={`/nonton?url=${anime.id}`}>
+                    <Link href={`/${anime.id}`}>
                       <div className="flex flex-col sm:flex-row">
                         <div className="relative w-full sm:w-48 h-48 sm:h-auto flex-shrink-0">
                           <Image
