@@ -2,6 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { AnimeItem } from "./types";
 
 interface PopularAnimeProps {
@@ -45,12 +46,16 @@ const PopularAnime: React.FC<PopularAnimeProps> = ({ animeList }) => {
                   href={`/nonton?url=${anime.id.replace(/^\//, "")}`}
                   className="block w-full h-full"
                 >
-                  <img
-                    src={anime.image.replace(/[?&]resize=\d+,\d+/, "")}
-                    alt={anime.title}
-                    className="w-full h-full object-cover object-center transform hover:scale-110 transition-transform duration-700"
-                    loading="lazy"
-                  />
+                  <div className="relative w-full h-full">
+                    <Image
+                      src={anime.image.replace(/[?&]resize=\d+,\d+/, "")}
+                      alt={anime.title}
+                      fill
+                      sizes="(max-width: 767px) 50vw, 33vw"
+                      className="object-cover object-center transform hover:scale-110 transition-transform duration-700"
+                      priority={index < 2}
+                    />
+                  </div>
                 </a>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-70 group-hover:opacity-90 transition-opacity"></div>
 
@@ -107,15 +112,15 @@ const PopularAnime: React.FC<PopularAnimeProps> = ({ animeList }) => {
                   href={`/nonton?url=${anime.id.replace(/^\//, "")}`}
                   className="block w-full h-full"
                 >
-                  <img
-                    src={`${anime.image.replace(
-                      /[?&]resize=\d+,\d+/,
-                      ""
-                    )}?resize=100,150`}
-                    alt={anime.title}
-                    className="w-full h-full object-cover object-center"
-                    loading="lazy"
-                  />
+                  <div className="relative w-full h-full">
+                    <Image
+                      src={anime.image.replace(/[?&]resize=\d+,\d+/, "")}
+                      alt={anime.title}
+                      fill
+                      sizes="56px"
+                      className="object-cover object-center"
+                    />
+                  </div>
                 </a>
               </div>
 

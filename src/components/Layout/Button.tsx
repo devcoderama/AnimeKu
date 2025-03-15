@@ -167,6 +167,10 @@ export const ButtonLayout: React.FC<ButtonLayoutProps> = ({ children }) => {
   );
 };
 
-export default {
+// Create a named object for the default export
+const ButtonComponents = {
   ButtonLayout,
 };
+
+// Export the ButtonLayout component as a named export and the ButtonComponents as default
+export default ButtonComponents;

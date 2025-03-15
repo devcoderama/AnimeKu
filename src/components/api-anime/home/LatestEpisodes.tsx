@@ -2,6 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { LatestEpisode } from "./types";
 
 interface LatestEpisodesProps {
@@ -45,12 +46,16 @@ const LatestEpisodes: React.FC<LatestEpisodesProps> = ({ episodes }) => {
                   href={`/nonton?url=${episode.id.replace(/^\//, "")}`}
                   className="block w-full h-full"
                 >
-                  <img
-                    src={episode.image.replace(/[?&]resize=\d+,\d+/, "")}
-                    alt={episode.animeTitle}
-                    className="w-full h-full object-cover object-center transform hover:scale-110 transition-transform duration-700"
-                    loading="lazy"
-                  />
+                  <div className="relative w-full h-full">
+                    <Image
+                      src={episode.image.replace(/[?&]resize=\d+,\d+/, "")}
+                      alt={episode.animeTitle}
+                      fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                      className="object-cover object-center transform hover:scale-110 transition-transform duration-700"
+                      priority={index < 4}
+                    />
+                  </div>
                 </a>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-70 group-hover:opacity-90 transition-opacity"></div>
 

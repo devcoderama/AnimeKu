@@ -1,28 +1,37 @@
-import { NextRequest, NextResponse } from "next/server";
-
 interface ApiError extends Error {
   cause?: {
     code?: string;
   };
 }
 
-export async function GET(request: NextRequest) {
+// Gunakan Request standar web, bukan NextRequest
+export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("q");
 
   if (!query) {
-    return NextResponse.json(
-      { error: "Query parameter is required" },
-      { status: 400 }
+    return new Response(
+      JSON.stringify({ error: "Query parameter is required" }),
+      {
+        status: 400,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
     );
   }
 
   const baseUrl = process.env.ANIME_API_BASE_URL;
 
   if (!baseUrl) {
-    return NextResponse.json(
-      { error: "API base URL is not configured" },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ error: "API base URL is not configured" }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
     );
   }
 
@@ -49,14 +58,21 @@ export async function GET(request: NextRequest) {
     if (!response.ok) {
       const errorMessage = `API responded with status code ${response.status}`;
       console.error(errorMessage);
-      return NextResponse.json(
-        { error: errorMessage },
-        { status: response.status }
-      );
+      return new Response(JSON.stringify({ error: errorMessage }), {
+        status: response.status,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    return new Response(JSON.stringify(data), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
   } catch (error) {
     console.error("Search Error:", error);
 
@@ -77,12 +93,17 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(
-      {
+    return new Response(
+      JSON.stringify({
         error: errorMessage,
         details: errorDetails,
-      },
-      { status: 503 } // Service Unavailable
+      }),
+      {
+        status: 503,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
     );
   }
 }

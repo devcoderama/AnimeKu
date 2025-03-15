@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import SearchBar from "@/components/SearchBar";
 import {
   Home,
@@ -91,7 +92,9 @@ const ButtonNavbarDesktop: React.FC<ButtonNavbarDesktopProps> = ({
       >
         {renderContent()}
         <span
-          className={`absolute bottom-0 left-0 h-0.5 w-full transform scale-x-0 transition-transform duration-300 origin-left 
+          className={`absolute bottom-0 left-0 h-0.5 w-full transform ${
+            isActive ? "scale-x-100" : "scale-x-0"
+          } transition-transform duration-300 origin-left 
             ${
               isActive
                 ? "bg-gradient-to-r from-indigo-500 to-purple-500"
@@ -117,7 +120,9 @@ const ButtonNavbarDesktop: React.FC<ButtonNavbarDesktopProps> = ({
     >
       {renderContent()}
       <span
-        className={`absolute bottom-0 left-0 h-0.5 w-full transform scale-x-0 transition-transform duration-300 origin-left 
+        className={`absolute bottom-0 left-0 h-0.5 w-full transform ${
+          isActive ? "scale-x-100" : "scale-x-0"
+        } transition-transform duration-300 origin-left 
           ${
             isActive
               ? "bg-gradient-to-r from-indigo-500 to-purple-500"
@@ -130,25 +135,54 @@ const ButtonNavbarDesktop: React.FC<ButtonNavbarDesktopProps> = ({
 };
 
 export const NavButtons = () => {
+  const pathname = usePathname();
+
+  // Function to check if a path is active (including partial matches for sub-routes)
+  const isActive = (path: string) => {
+    if (path === "/" && pathname === "/") return true;
+    if (path !== "/" && pathname.startsWith(path)) return true;
+    return false;
+  };
+
   return (
     <div className="hidden md:flex items-center space-x-3">
       <div className="flex items-center space-x-1">
-        <ButtonNavbarDesktop icon={Home} isActive href="/">
+        <ButtonNavbarDesktop icon={Home} isActive={isActive("/")} href="/">
           Beranda
         </ButtonNavbarDesktop>
-        <ButtonNavbarDesktop icon={Tags} href="/genres">
+        <ButtonNavbarDesktop
+          icon={Tags}
+          isActive={isActive("/genres")}
+          href="/genres"
+        >
           Genres
         </ButtonNavbarDesktop>
-        <ButtonNavbarDesktop icon={RefreshCw} href="/ongoing">
+        <ButtonNavbarDesktop
+          icon={RefreshCw}
+          isActive={isActive("/ongoing")}
+          href="/ongoing"
+        >
           Ongoing
         </ButtonNavbarDesktop>
-        <ButtonNavbarDesktop icon={Star} href="/popular">
+        <ButtonNavbarDesktop
+          icon={Star}
+          isActive={isActive("/popular")}
+          href="/popular"
+        >
           Popular
         </ButtonNavbarDesktop>
-        <ButtonNavbarDesktop icon={SunMoon} href="/season">
+        <ButtonNavbarDesktop
+          icon={SunMoon}
+          isActive={isActive("/season")}
+          href="/season"
+        >
           Season
         </ButtonNavbarDesktop>
-        <ButtonNavbarDesktop icon={Calendar} href="/jadwal-rilis">
+        <ButtonNavbarDesktop
+          icon={Calendar}
+          isActive={isActive("/jadwal-rilis")}
+          href="/jadwal-rilis"
+        >
           Jadwal Rilis
         </ButtonNavbarDesktop>
         <ButtonNavbarDesktop
@@ -171,6 +205,7 @@ export const NavButtons = () => {
       {/* Tombol Donasi dengan desain khusus */}
       <ButtonNavbarDesktop
         icon={HeartHandshake}
+        isActive={isActive("/donate")}
         href="/donate"
         className="ml-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-gray-100
           shadow-md hover:shadow-indigo-700/20 transition-all duration-300 relative overflow-hidden"
