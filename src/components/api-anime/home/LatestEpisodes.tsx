@@ -48,7 +48,7 @@ const LatestEpisodes: React.FC<LatestEpisodesProps> = ({ episodes }) => {
                 >
                   <div className="relative w-full h-full">
                     <Image
-                      src={episode.image.replace(/[?&]resize=\d+,\d+/, "")}
+                      src={episode.image}
                       alt={episode.animeTitle}
                       fill
                       sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"

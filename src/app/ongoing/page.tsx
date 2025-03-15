@@ -181,7 +181,7 @@ const OngoingAnimeContent = () => {
         // Remove resize parameter from image URLs
         const processedAnimeList = data.data.anime.map((anime) => ({
           ...anime,
-          image: anime.image.replace(/\?resize=\d+,\d+/, ""),
+          image: anime.image,
         }));
 
         setAnimeList(processedAnimeList);

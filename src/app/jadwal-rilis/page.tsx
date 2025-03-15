@@ -132,11 +132,18 @@ export default function JadwalRilisPage() {
     fetchScheduleData();
   }, [activeDay]);
 
-  // Helper to get image URL with fallback
+  // Helper to get image URL with fallback and add resize parameter
   const getImageUrl = (url: string) => {
-    return url || "/placeholder-anime.jpg";
-  };
+    if (!url) return "/placeholder-anime.jpg";
 
+    // Jika URL sudah memiliki parameter
+    if (url.includes("?")) {
+      return url + "&resize=185,111";
+    }
+
+    // Jika URL belum memiliki parameter
+    return url + "?resize=185,111";
+  };
   // Helper to translate day names to Indonesian
   const translateDay = (day: string) => {
     // Already in Indonesian from the API, but keeping this for flexibility

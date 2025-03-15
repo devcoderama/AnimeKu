@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import { AnimeItem } from "./types";
 
@@ -9,10 +10,38 @@ interface FeaturedSliderProps {
   sliderData: AnimeItem[];
 }
 
+// Create an interface to avoid using 'any'
+interface NavigatorWithMemory extends Navigator {
+  deviceMemory?: number;
+}
+
 const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ sliderData }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
+  const [imagesLoaded, setImagesLoaded] = useState<boolean[]>([]);
+  const [isLowPowerDevice, setIsLowPowerDevice] = useState(false);
   const sliderRef = useRef<HTMLDivElement>(null);
+
+  // Detect low-power devices
+  useEffect(() => {
+    const checkDevicePower = () => {
+      const navigatorWithMemory = navigator as NavigatorWithMemory;
+      const hardwareConcurrency = navigator.hardwareConcurrency || 0;
+      const deviceMemory = navigatorWithMemory.deviceMemory || 0;
+
+      const isLowEnd =
+        hardwareConcurrency <= 4 ||
+        deviceMemory <= 4 ||
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      setIsLowPowerDevice(isLowEnd);
+    };
+
+    checkDevicePower();
+
+    // Initialize imagesLoaded state
+    setImagesLoaded(Array(sliderData.length).fill(false));
+  }, [sliderData.length]);
 
   // Auto slide for the featured section
   useEffect(() => {
@@ -102,6 +131,47 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ sliderData }) => {
     return `/anime/${formattedId}`;
   };
 
+  // Optimize image URLs based on device and slide state
+  const getOptimizedImageUrl = (originalUrl: string, isActive: boolean) => {
+    // Remove resize parameters if any
+    const baseUrl = originalUrl.replace(/[?&]resize=\d+,\d+/, "");
+
+    // For active slide, use higher quality
+    if (isActive) {
+      return baseUrl;
+    }
+
+    // For inactive slides on low-power devices, use lowest quality
+    if (isLowPowerDevice) {
+      return `${baseUrl}?quality=30&width=300`;
+    }
+
+    // For regular inactive slides, use medium quality
+    return `${baseUrl}?quality=50&width=480`;
+  };
+
+  // Animation settings based on device capability
+  const animationSettings = useMemo(() => {
+    return isLowPowerDevice
+      ? {
+          duration: 0,
+          repeat: 0,
+          repeatType: "mirror" as const,
+        }
+      : {
+          duration: 10,
+          repeat: Infinity,
+          repeatType: "reverse" as const,
+        };
+  }, [isLowPowerDevice]);
+
+  // Handle image load completion
+  const handleImageLoaded = (index: number) => {
+    const newLoadedStates = [...imagesLoaded];
+    newLoadedStates[index] = true;
+    setImagesLoaded(newLoadedStates);
+  };
+
   if (sliderData.length === 0) return null;
 
   return (
@@ -143,6 +213,11 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ sliderData }) => {
                 index === currentSlide + 1 ||
                 (currentSlide === sliderData.length - 1 && index === 0);
 
+              // Only render visible slides to improve performance
+              if (!isActive && !isPrev && !isNext) {
+                return null;
+              }
+
               let position = "hidden";
               let zIndex = 0;
               let scale = 1;
@@ -173,6 +248,8 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ sliderData }) => {
                 rotateY = "0deg";
               }
 
+              const imageUrl = getOptimizedImageUrl(item.image, isActive);
+
               return (
                 <div
                   key={item.id}
@@ -190,23 +267,31 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ sliderData }) => {
                       <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-indigo-600/10 to-purple-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 z-0"></div>
                     )}
 
-                    {/* Image - without resize parameter */}
-                    <motion.img
-                      src={item.image.replace(/[?&]resize=\d+,\d+/, "")}
-                      alt={item.title}
-                      className="w-full h-full object-cover object-center transform group-hover:scale-110 transition-transform duration-700"
-                      loading="lazy"
+                    {/* Loading skeleton */}
+                    {!imagesLoaded[index] && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-gray-900 to-gray-800 animate-pulse z-10"></div>
+                    )}
+
+                    {/* Image - optimized with next/image */}
+                    <motion.div
+                      className="relative w-full h-full"
                       initial={{ scale: 1 }}
-                      animate={{
-                        scale: isActive ? 1.05 : 1,
-                      }}
-                      transition={{
-                        duration: 10,
-                        ease: "linear",
-                        repeat: Infinity,
-                        repeatType: "reverse",
-                      }}
-                    />
+                      animate={{ scale: isActive ? 1.05 : 1 }}
+                      transition={animationSettings}
+                    >
+                      <Image
+                        src={imageUrl}
+                        alt={item.title}
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        className="object-cover object-center transform group-hover:scale-110 transition-transform duration-700"
+                        loading={isActive ? "eager" : "lazy"}
+                        priority={isActive}
+                        quality={isActive ? 85 : 60}
+                        onLoad={() => handleImageLoaded(index)}
+                        onError={() => handleImageLoaded(index)} // Mark as loaded even on error to remove skeleton
+                      />
+                    </motion.div>
 
                     {/* Overlay gradient for text - enhanced */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent z-[1]"></div>
@@ -233,14 +318,12 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ sliderData }) => {
                         <div className="flex flex-wrap gap-0.5 mb-0.5 sm:mb-1">
                           {item.latestEpisode && (
                             <div className="inline-flex items-center rounded-md py-0.5 px-1 sm:py-0.5 sm:px-1.5 text-white bg-indigo-900/40 text-[10px] sm:text-xs backdrop-blur-sm border border-indigo-500/20">
-                              <motion.svg
+                              <svg
                                 className="w-2.5 h-2.5 mr-1 sm:w-3 sm:h-3 sm:mr-1.5 text-indigo-400"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
                                 xmlns="http://www.w3.org/2000/svg"
-                                whileHover={{ rotate: 180 }}
-                                transition={{ duration: 0.5 }}
                               >
                                 <path
                                   strokeLinecap="round"
@@ -248,50 +331,34 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ sliderData }) => {
                                   strokeWidth={2}
                                   d="M7 4v16M17 4v16M3 8h18M3 16h18"
                                 />
-                              </motion.svg>
+                              </svg>
                               Episode {item.latestEpisode}
                             </div>
                           )}
 
                           {item.type && (
                             <div className="inline-flex items-center rounded-md py-1 px-2 text-white bg-indigo-900/40 text-xs backdrop-blur-sm border border-indigo-500/20">
-                              <motion.span
+                              <span
                                 className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${
                                   item.type === "SUB"
                                     ? "bg-indigo-400"
                                     : "bg-yellow-400"
                                 } mr-1 sm:mr-1.5`}
-                                animate={{
-                                  scale: [1, 1.5, 1],
-                                }}
-                                transition={{
-                                  duration: 2,
-                                  repeat: Infinity,
-                                  ease: "easeInOut",
-                                }}
-                              ></motion.span>
+                              ></span>
                               {item.type}
                             </div>
                           )}
 
                           {item.score && (
                             <div className="inline-flex items-center rounded-md py-1 px-2 text-white bg-indigo-900/40 text-xs backdrop-blur-sm border border-indigo-500/20">
-                              <motion.svg
+                              <svg
                                 className="w-2.5 h-2.5 mr-1 sm:w-3 sm:h-3 sm:mr-1.5 text-yellow-400"
                                 fill="currentColor"
                                 viewBox="0 0 24 24"
                                 xmlns="http://www.w3.org/2000/svg"
-                                animate={{
-                                  rotate: [0, 10, -10, 0],
-                                }}
-                                transition={{
-                                  duration: 2,
-                                  repeat: Infinity,
-                                  ease: "easeInOut",
-                                }}
                               >
                                 <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                              </motion.svg>
+                              </svg>
                               {item.score.toFixed(1)}
                             </div>
                           )}
@@ -303,20 +370,14 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ sliderData }) => {
                             className="group/btn bg-gradient-to-r from-indigo-600 to-purple-500 hover:from-indigo-700 hover:to-purple-600 text-white font-medium text-[10px] sm:text-xs py-1 px-2 sm:py-1.5 sm:px-3 rounded-lg inline-flex items-center shadow-lg shadow-indigo-500/20 transition-all duration-300 relative overflow-hidden"
                           >
                             <div className="absolute inset-0 bg-white opacity-0 group-hover/btn:opacity-10 transition-opacity duration-300"></div>
-                            <motion.svg
+                            <svg
                               className="h-2.5 w-2.5 mr-1 sm:h-3 sm:w-3 sm:mr-1.5"
                               viewBox="0 0 24 24"
                               fill="currentColor"
                               xmlns="http://www.w3.org/2000/svg"
-                              whileHover={{ scale: 1.2 }}
-                              transition={{
-                                type: "spring",
-                                stiffness: 400,
-                                damping: 10,
-                              }}
                             >
                               <path d="M8 5.14v14l11-7-11-7z" />
-                            </motion.svg>
+                            </svg>
                             Tonton
                           </Link>
 
@@ -324,14 +385,12 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ sliderData }) => {
                             href={formatInfoUrl(item.id)}
                             className="group/btn bg-white/5 backdrop-blur-sm hover:bg-white/10 border border-indigo-500/20 hover:border-indigo-500/40 text-white font-medium text-[10px] sm:text-xs py-1 px-2 sm:py-1.5 sm:px-3 rounded-lg inline-flex items-center transition-all duration-300"
                           >
-                            <motion.svg
+                            <svg
                               className="h-2.5 w-2.5 mr-1 sm:h-3 sm:w-3 sm:mr-1.5"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
                               xmlns="http://www.w3.org/2000/svg"
-                              whileHover={{ rotate: 360 }}
-                              transition={{ duration: 0.5 }}
                             >
                               <path
                                 strokeLinecap="round"
@@ -339,7 +398,7 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ sliderData }) => {
                                 strokeWidth={2}
                                 d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                               />
-                            </motion.svg>
+                            </svg>
                             Info
                           </Link>
                         </div>
@@ -365,19 +424,12 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ sliderData }) => {
           aria-label="Previous slide"
         >
           <div className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-indigo-900/40 backdrop-blur-md border border-indigo-500/30 text-white hover:bg-indigo-800/50 hover:border-indigo-500/50 transition-all duration-300 group">
-            <motion.svg
+            <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-4 w-4 sm:h-5 sm:w-5 text-white"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
-              animate={{ x: [0, -3, 0] }}
-              transition={{
-                duration: 1.5,
-                repeat: Infinity,
-                repeatType: "reverse",
-                ease: "easeInOut",
-              }}
             >
               <path
                 strokeLinecap="round"
@@ -385,7 +437,7 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ sliderData }) => {
                 strokeWidth={2}
                 d="M15 19l-7-7 7-7"
               />
-            </motion.svg>
+            </svg>
           </div>
         </motion.button>
 
@@ -399,19 +451,12 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ sliderData }) => {
           aria-label="Next slide"
         >
           <div className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-indigo-900/40 backdrop-blur-md border border-indigo-500/30 text-white hover:bg-indigo-800/50 hover:border-indigo-500/50 transition-all duration-300 group">
-            <motion.svg
+            <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-4 w-4 sm:h-5 sm:w-5 text-white"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
-              animate={{ x: [0, 3, 0] }}
-              transition={{
-                duration: 1.5,
-                repeat: Infinity,
-                repeatType: "reverse",
-                ease: "easeInOut",
-              }}
             >
               <path
                 strokeLinecap="round"
@@ -419,7 +464,7 @@ const FeaturedSlider: React.FC<FeaturedSliderProps> = ({ sliderData }) => {
                 strokeWidth={2}
                 d="M9 5l7 7-7 7"
               />
-            </motion.svg>
+            </svg>
           </div>
         </motion.button>
       </div>

@@ -283,7 +283,7 @@ const SeasonContent = () => {
           let imageUrl = anime.thumbnail || anime.image || "";
 
           // Remove resize parameters if present
-          imageUrl = imageUrl.replace(/\?resize=\d+,\d+/, "");
+          imageUrl = imageUrl + "?resize=185,111";
 
           // Convert protocol-relative URLs to absolute URLs
           if (imageUrl.startsWith("//")) {

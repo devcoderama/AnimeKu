@@ -22,7 +22,7 @@ const getImageSrc = (thumbnail?: string | null, image?: string) => {
   // Cek jika thumbnail tersedia
   if (thumbnail && thumbnail.trim() !== "") {
     // Hapus parameter resize dari URL
-    return thumbnail.replace(/\?resize=\d+,\d+/, "");
+    return thumbnail;
   }
 
   // Cek jika image tersedia

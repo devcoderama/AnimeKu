@@ -48,7 +48,7 @@ const RecentlyAdded: React.FC<RecentlyAddedProps> = ({ animeList }) => {
                 >
                   <div className="relative w-full h-full">
                     <Image
-                      src={anime.image.replace(/[?&]resize=\d+,\d+/, "")}
+                      src={anime.image}
                       alt={anime.title}
                       fill
                       sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"

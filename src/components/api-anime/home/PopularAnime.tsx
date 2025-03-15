@@ -48,7 +48,7 @@ const PopularAnime: React.FC<PopularAnimeProps> = ({ animeList }) => {
                 >
                   <div className="relative w-full h-full">
                     <Image
-                      src={anime.image.replace(/[?&]resize=\d+,\d+/, "")}
+                      src={anime.image}
                       alt={anime.title}
                       fill
                       sizes="(max-width: 767px) 50vw, 33vw"
